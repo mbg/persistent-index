@@ -19,8 +19,6 @@ module Database.Persist.Index.Postgresql (
 
 --------------------------------------------------------------------------------
 
-import Data.Maybe (fromMaybe)
-import Data.Proxy
 import qualified Data.Text as T
 
 import Database.Persist
@@ -58,17 +56,11 @@ instance SupportsIndices Postgresql where
         -> [IndexColumnEx Postgresql rec]
         -> Migration
     createIndex opts columns = addMigration False $ T.concat
-        [ "CREATE "
-        , if idxUnique opts then "UNIQUE " else T.empty
-        , "INDEX IF NOT EXISTS "
-        , fromMaybe (indexName columns) (idxName opts), " ON "
-        , tableName, " (", T.intercalate ", " fieldSql, ") "
+        [ baseIndexSql opts columns
+        , " (", T.intercalate ", " fieldSql, ") "
         ]
         where
             fieldSql = map mkSql columns
-            tableName =
-                unEntityNameDB . getEntityDBName $
-                entityDef (Proxy :: Proxy rec)
             sortOrder IdxColumn{..} = case idxColumnSortOrder of
                 Nothing -> T.empty
                 Just order -> sortOrderSql order

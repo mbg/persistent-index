@@ -116,6 +116,24 @@ class SupportsIndices dbms where
     defaultIndexExtras :: IndexExt dbms
     defaultIndexColumnExtras :: IndexColumnExt dbms
 
+    baseIndexSql
+        :: forall rec . PersistEntity rec
+        => IndexOpts dbms
+        -> [IndexColumnEx dbms rec]
+        -> T.Text
+    baseIndexSql opts columns = T.concat
+        [ "CREATE "
+        , if idxUnique opts then "UNIQUE " else T.empty
+        , "INDEX IF NOT EXISTS "
+        , fromMaybe (indexName columns) (idxName opts), " ON "
+        , tableName
+        ]
+        where
+            tableName =
+                unEntityNameDB . getEntityDBName $
+                entityDef (Proxy :: Proxy rec)
+
+
     -- | `createIndex` @options indexColumns@ builds a `Migration` that creates
     -- index on @indexColumns@ using @options@ when applied.
     createIndex
@@ -124,17 +142,11 @@ class SupportsIndices dbms where
         -> [IndexColumnEx dbms rec]
         -> Migration
     createIndex opts columns = addMigration False $ T.concat
-        [ "CREATE "
-        , if idxUnique opts then "UNIQUE " else T.empty
-        , "INDEX IF NOT EXISTS "
-        , fromMaybe (indexName columns) (idxName opts), " ON "
-        , tableName, " (", T.intercalate ", " fieldSql, ") "
+        [ baseIndexSql opts columns
+        , " (", T.intercalate ", " fieldSql, ") "
         ]
         where
             fieldSql = map mkSql columns
-            tableName =
-                unEntityNameDB . getEntityDBName $
-                entityDef (Proxy :: Proxy rec)
             sortOrder IdxColumn{..} = case idxColumnSortOrder of
                 Nothing -> T.empty
                 Just order -> sortOrderSql order
