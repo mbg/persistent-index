@@ -1,0 +1,38 @@
+name: "Stackage Nightly"
+
+on:
+  # Run nightly to verify that we are compatible with the `nightly` Stack resolver
+  schedule:
+    - cron: "5 6 * * *"
+  # Allow manual runs
+  workflow_dispatch:
+  # Test PRs against the `nightly` resolver to ensure new changes are compatible with new resolvers
+  pull_request:
+  # Runs for updates to this workflow file on `main` branch.
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/nightly.yml"
+
+permissions:
+  contents: read
+  issues: write # needed for the `create-issue` option
+
+concurrency:
+  group: nightly-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: "Build"
+    runs-on: "ubuntu-latest"
+
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v4
+
+      - name: "Build with nightly resolver"
+        uses: mbg/actions/stack/nightly@v0.2
+        with:
+          create-issue: "true"
