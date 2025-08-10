@@ -59,3 +59,24 @@ tests:
       - TemplateHaskell
       - UndecidableInstances
 
+  persistent-index-postgresql-tests:
+    source-dirs: test/postgresql
+    main: Spec.hs
+    dependencies:
+      - monad-logger
+      - mtl
+      - persistent-index
+      - persistent-postgresql
+      - tasty
+      - tasty-hunit
+    default-extensions:
+      - DataKinds
+      - DerivingStrategies
+      - FlexibleInstances
+      - GADTs
+      - GeneralizedNewtypeDeriving
+      - MultiParamTypeClasses
+      - QuasiQuotes
+      - StandaloneDeriving
+      - TemplateHaskell
+      - UndecidableInstances

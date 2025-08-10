@@ -1,0 +1,70 @@
+--------------------------------------------------------------------------------
+-- Column index support for persistent                                        --
+--------------------------------------------------------------------------------
+-- This source code is licensed under the MIT license found in the LICENSE    --
+-- file in the root directory of this source tree.                            --
+--------------------------------------------------------------------------------
+
+{-# LANGUAGE ScopedTypeVariables #-}
+
+-- | Provides support for creating search indices for PostgreSQL databases.
+module Database.Persist.Index.Postgresql (
+    module Database.Persist.Index,
+    Postgresql,
+    PostgresqlIndexColumn,
+    psqlNullsOrder
+) where
+
+--------------------------------------------------------------------------------
+
+import Data.Proxy
+import qualified Data.Text as T
+
+import Database.Persist
+import Database.Persist.Index
+import Database.Persist.Sql.Migration
+
+--------------------------------------------------------------------------------
+
+-- | Identifies PostgreSQL on the type level.
+data Postgresql
+
+-- | Represents index column options that are specific to PostgreSQL.
+data PostgresqlIndexColumn = PsqlIndexColumn {
+    -- | Controls whether @NULL@ values appear as the first or last elements of
+    -- the index.
+    psqlNullsOrder :: Maybe NullsOrder
+}
+
+instance SupportsIndices Postgresql where
+    type IndexColumnExt Postgresql = PostgresqlIndexColumn
+
+    defaultIndexExtras :: IndexColumnExt Postgresql
+    defaultIndexExtras = PsqlIndexColumn{
+        psqlNullsOrder = Nothing
+    }
+
+    createIndex
+        :: forall rec . PersistEntity rec
+        => Bool
+        -> [IndexColumnEx Postgresql rec]
+        -> Migration
+    createIndex unique columns = addMigration False $ T.concat
+        [ "CREATE "
+        , if unique then "UNIQUE " else T.empty
+        , "INDEX IF NOT EXISTS "
+        , indexName columns, " ON "
+        , tableName, " (", T.intercalate ", " fieldSql, ") "
+        ]
+        where
+            fieldSql = map mkSql columns
+            tableName =
+                unEntityNameDB . getEntityDBName $
+                entityDef (Proxy :: Proxy rec)
+            sortOrder IdxColumn{..} = case idxSortOrder of
+                Nothing -> T.empty
+                Just order -> sortOrderSql order
+
+            mkSql col = T.concat ["\"", indexColumnName col, "\" ", sortOrder col]
+
+--------------------------------------------------------------------------------
