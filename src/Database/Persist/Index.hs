@@ -14,10 +14,9 @@
 -- import a DBMS-specific module, such as "Database.Persist.Index.Postgresql"
 -- instead of importing this one directly.
 module Database.Persist.Index (
+    ToSql(..),
     SortOrder(..),
-    sortOrderSql,
     NullsOrder(..),
-    nullsOrderSql,
     IndexColumnEx(..),
     IndexOpts(..),
     defaultIndexOptions,
@@ -40,6 +39,11 @@ import Database.Persist.Sql.Migration
 
 --------------------------------------------------------------------------------
 
+-- | A class of types whose values can be rendered to SQL as `T.Text`.
+class ToSql a where
+    -- | `toSql` @val@ renders @val@ to SQL as `T.Text`.
+    toSql :: a -> T.Text
+
 -- | Enumerates sorting orders.
 data SortOrder
     -- | Ascending sort order.
@@ -48,11 +52,12 @@ data SortOrder
     | DESC
     deriving (Eq, Show)
 
--- | `sortOrderSql` @sortOrder@ converts @sortOrder@ to the corresponding
--- SQL string as a `T.Text` value.
-sortOrderSql :: SortOrder -> T.Text
-sortOrderSql ASC = "ASC"
-sortOrderSql DESC = "DESC"
+instance ToSql SortOrder where
+    -- | `toSql` @sortOrder@ converts @sortOrder@ to the corresponding
+    -- SQL string as a `T.Text` value.
+    toSql :: SortOrder -> T.Text
+    toSql ASC = "ASC"
+    toSql DESC = "DESC"
 
 -- | Enumerates different orders for where @NULL@ values should appear.
 data NullsOrder
@@ -62,11 +67,12 @@ data NullsOrder
     | NullsLast
     deriving (Eq, Show)
 
--- | `nullsOrderSql` @nullsOrder@ converts @nullsOrder@ to the corresponding
--- SQL string as a `T.Text` value.
-nullsOrderSql :: NullsOrder -> T.Text
-nullsOrderSql NullsFirst = "NULLS FIRST"
-nullsOrderSql NullsLast = "NULLS LAST"
+instance ToSql NullsOrder where
+    -- | `toSql` @nullsOrder@ converts @nullsOrder@ to the corresponding
+    -- SQL string as a `T.Text` value.
+    toSql :: NullsOrder -> T.Text
+    toSql NullsFirst = "NULLS FIRST"
+    toSql NullsLast = "NULLS LAST"
 
 --------------------------------------------------------------------------------
 
@@ -149,7 +155,7 @@ class SupportsIndices dbms where
             fieldSql = map mkSql columns
             sortOrder IdxColumn{..} = case idxColumnSortOrder of
                 Nothing -> T.empty
-                Just order -> sortOrderSql order
+                Just order -> toSql order
 
             mkSql col = T.concat ["\"", indexColumnName col, "\" ", sortOrder col]
 

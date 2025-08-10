@@ -63,7 +63,7 @@ instance SupportsIndices Postgresql where
             fieldSql = map mkSql columns
             sortOrder IdxColumn{..} = case idxColumnSortOrder of
                 Nothing -> T.empty
-                Just order -> sortOrderSql order
+                Just order -> toSql order
 
             mkSql col = T.concat ["\"", indexColumnName col, "\" ", sortOrder col]
 
