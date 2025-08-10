@@ -35,3 +35,27 @@ library:
   source-dirs: src
   ghc-options:
     - -Wall
+
+tests:
+  persistent-index-sqlite-tests:
+    source-dirs: test/sqlite
+    main: Spec.hs
+    dependencies:
+      - monad-logger
+      - mtl
+      - persistent-index
+      - persistent-sqlite
+      - tasty
+      - tasty-hunit
+    default-extensions:
+      - DataKinds
+      - DerivingStrategies
+      - FlexibleInstances
+      - GADTs
+      - GeneralizedNewtypeDeriving
+      - MultiParamTypeClasses
+      - QuasiQuotes
+      - StandaloneDeriving
+      - TemplateHaskell
+      - UndecidableInstances
+
