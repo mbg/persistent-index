@@ -44,7 +44,8 @@ tests :: SqlBackend -> TestTree
 tests backend = testGroup "Database.Persist.Index.Sqlite"
     [ testCase "Can create single-column index" $
         flip runSqlConn backend $ do
-            let expectedIndexName = "example_name_idx"
+            let indexColumns = [indexColumn Nothing ExampleName]
+            let expectedIndexName = indexName indexColumns
 
             -- check that the index doesn't already exist
             startCount <- countIndicesNamed expectedIndexName
@@ -52,14 +53,18 @@ tests backend = testGroup "Database.Persist.Index.Sqlite"
                 [Single 0] startCount
 
             -- create the index
-            runMigration $ createIndex @Sqlite False [indexColumn Nothing ExampleName]
+            runMigration $ createIndex @Sqlite False indexColumns
 
             -- check that it exists
             endCount <- countIndicesNamed expectedIndexName
             liftIO $ assertEqual "Index wasn't created" [Single 1] endCount
     , testCase "Can create multi-column index" $
         flip runSqlConn backend $ do
-            let expectedIndexName = "example_name_age_idx"
+            let indexColumns =
+                    [ indexColumn Nothing ExampleName
+                    , indexColumn Nothing ExampleAge
+                    ]
+            let expectedIndexName = indexName indexColumns
 
             -- check that the index doesn't already exist
             startCount <- countIndicesNamed expectedIndexName
@@ -67,10 +72,7 @@ tests backend = testGroup "Database.Persist.Index.Sqlite"
                 [Single 0] startCount
 
             -- create the index
-            runMigration $ createIndex @Sqlite False
-                [ indexColumn Nothing ExampleName
-                , indexColumn Nothing ExampleAge
-                ]
+            runMigration $ createIndex @Sqlite False indexColumns
 
             -- check that it exists
             endCount <- countIndicesNamed expectedIndexName
