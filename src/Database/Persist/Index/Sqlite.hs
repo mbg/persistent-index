@@ -21,9 +21,13 @@ import Database.Persist.Index
 data Sqlite
 
 instance SupportsIndices Sqlite where
+    type IndexExt Sqlite = ()
     type IndexColumnExt Sqlite = ()
 
-    defaultIndexExtras :: IndexColumnExt Sqlite
+    defaultIndexExtras :: IndexExt Sqlite
     defaultIndexExtras = ()
+
+    defaultIndexColumnExtras :: IndexColumnExt Sqlite
+    defaultIndexColumnExtras = ()
 
 --------------------------------------------------------------------------------

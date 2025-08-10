@@ -38,10 +38,14 @@ data PostgresqlIndexColumn = PsqlIndexColumn {
 }
 
 instance SupportsIndices Postgresql where
+    type IndexExt Postgresql = ()
     type IndexColumnExt Postgresql = PostgresqlIndexColumn
 
-    defaultIndexExtras :: IndexColumnExt Postgresql
-    defaultIndexExtras = PsqlIndexColumn{
+    defaultIndexExtras :: IndexExt Postgresql
+    defaultIndexExtras = ()
+
+    defaultIndexColumnExtras :: IndexColumnExt Postgresql
+    defaultIndexColumnExtras = PsqlIndexColumn{
         psqlNullsOrder = Nothing
     }
 

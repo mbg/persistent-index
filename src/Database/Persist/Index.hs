@@ -97,22 +97,24 @@ data IndexOpts dbms = IndexOpts {
     -- that duplicate index entries are not allowed.
     idxUnique :: !Bool,
     -- | Additional, DBMS-specific data.
-    idxExtra :: !()
+    idxExtra :: !(IndexExt dbms)
 }
 
 -- | `defaultIndexOptions` is a default value for `IndexOpts`.
-defaultIndexOptions :: IndexOpts dbms
+defaultIndexOptions :: forall dbms . SupportsIndices dbms => IndexOpts dbms
 defaultIndexOptions = IndexOpts{
     idxName = Nothing,
     idxUnique = False,
-    idxExtra = ()
+    idxExtra = defaultIndexExtras @dbms
 }
 
 -- | A class for database engines that support search indices.
 class SupportsIndices dbms where
+    type family IndexExt dbms :: Type
     type family IndexColumnExt dbms :: Type
 
-    defaultIndexExtras :: IndexColumnExt dbms
+    defaultIndexExtras :: IndexExt dbms
+    defaultIndexColumnExtras :: IndexColumnExt dbms
 
     -- | `createIndex` @options indexColumns@ builds a `Migration` that creates
     -- index on @indexColumns@ using @options@ when applied.
@@ -150,7 +152,7 @@ indexColumn
 indexColumn mSortOrder entityField = IdxColumn{
     idxColumnField = entityField,
     idxColumnSortOrder = mSortOrder,
-    idxColumnExtra = defaultIndexExtras @dbms
+    idxColumnExtra = defaultIndexColumnExtras @dbms
 }
 
 -- | `indexColumnName` @indexColumn@ retrieves the name of the column
