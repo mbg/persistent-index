@@ -53,7 +53,7 @@ tests backend = testGroup "Database.Persist.Index.Postgresql"
                 [Single 0] startCount
 
             -- create the index
-            runMigration $ createIndex @Postgresql False indexColumns
+            runMigration $ createIndex @Postgresql defaultIndexOptions indexColumns
 
             -- check that it exists
             endCount <- countIndicesNamed expectedIndexName
@@ -72,7 +72,7 @@ tests backend = testGroup "Database.Persist.Index.Postgresql"
                 [Single 0] startCount
 
             -- create the index
-            runMigration $ createIndex @Postgresql False indexColumns
+            runMigration $ createIndex @Postgresql defaultIndexOptions indexColumns
 
             -- check that it exists
             endCount <- countIndicesNamed expectedIndexName

@@ -19,6 +19,8 @@ module Database.Persist.Index (
     NullsOrder(..),
     nullsOrderSql,
     IndexColumnEx(..),
+    IndexOpts(..),
+    defaultIndexOptions,
     SupportsIndices(..),
     indexColumn,
     IndexColumn,
@@ -29,6 +31,7 @@ module Database.Persist.Index (
 --------------------------------------------------------------------------------
 
 import Data.Kind (Type)
+import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import Data.Proxy
 
@@ -73,16 +76,37 @@ nullsOrderSql NullsLast = "NULLS LAST"
 data IndexColumnEx dbms rec
     = forall typ . IdxColumn {
         -- | The column.
-        idxField :: !(EntityField rec typ),
+        idxColumnField :: !(EntityField rec typ),
         -- | The order in which values of this column should appear
         -- in the index.
-        idxSortOrder :: !(Maybe SortOrder),
+        idxColumnSortOrder :: !(Maybe SortOrder),
         -- | Additional, DBMS-specific data.
-        idxExtra :: !(IndexColumnExt dbms)
+        idxColumnExtra :: !(IndexColumnExt dbms)
     }
 
 -- | Like `IndexColumnEx`, but with no DBMS-specific data.
 type IndexColumn = IndexColumnEx ()
+
+-- | Represents options for indices.
+data IndexOpts dbms = IndexOpts {
+    -- | The name to use for the index. If this is `Nothing`, a name is
+    -- automatically generated based on the table name and the fields
+    -- that are included in the index using `indexName`.
+    idxName :: !(Maybe T.Text),
+    -- | A value indicating whether to create a unique index to indicate
+    -- that duplicate index entries are not allowed.
+    idxUnique :: !Bool,
+    -- | Additional, DBMS-specific data.
+    idxExtra :: !()
+}
+
+-- | `defaultIndexOptions` is a default value for `IndexOpts`.
+defaultIndexOptions :: IndexOpts dbms
+defaultIndexOptions = IndexOpts{
+    idxName = Nothing,
+    idxUnique = False,
+    idxExtra = ()
+}
 
 -- | A class for database engines that support search indices.
 class SupportsIndices dbms where
@@ -90,16 +114,18 @@ class SupportsIndices dbms where
 
     defaultIndexExtras :: IndexColumnExt dbms
 
+    -- | `createIndex` @options indexColumns@ builds a `Migration` that creates
+    -- index on @indexColumns@ using @options@ when applied.
     createIndex
         :: forall rec . PersistEntity rec
-        => Bool
+        => IndexOpts dbms
         -> [IndexColumnEx dbms rec]
         -> Migration
-    createIndex unique columns = addMigration False $ T.concat
+    createIndex opts columns = addMigration False $ T.concat
         [ "CREATE "
-        , if unique then "UNIQUE " else T.empty
+        , if idxUnique opts then "UNIQUE " else T.empty
         , "INDEX IF NOT EXISTS "
-        , indexName columns, " ON "
+        , fromMaybe (indexName columns) (idxName opts), " ON "
         , tableName, " (", T.intercalate ", " fieldSql, ") "
         ]
         where
@@ -107,7 +133,7 @@ class SupportsIndices dbms where
             tableName =
                 unEntityNameDB . getEntityDBName $
                 entityDef (Proxy :: Proxy rec)
-            sortOrder IdxColumn{..} = case idxSortOrder of
+            sortOrder IdxColumn{..} = case idxColumnSortOrder of
                 Nothing -> T.empty
                 Just order -> sortOrderSql order
 
@@ -122,16 +148,16 @@ indexColumn
     -> EntityField rec typ
     -> IndexColumnEx dbms rec
 indexColumn mSortOrder entityField = IdxColumn{
-    idxField = entityField,
-    idxSortOrder = mSortOrder,
-    idxExtra = defaultIndexExtras @dbms
+    idxColumnField = entityField,
+    idxColumnSortOrder = mSortOrder,
+    idxColumnExtra = defaultIndexExtras @dbms
 }
 
 -- | `indexColumnName` @indexColumn@ retrieves the name of the column
 -- represented by @indexColumn@.
 indexColumnName :: PersistEntity rec => IndexColumnEx dbms rec -> T.Text
 indexColumnName IdxColumn{..} =
-    unFieldNameDB . fieldDB . persistFieldDef $ idxField
+    unFieldNameDB . fieldDB . persistFieldDef $ idxColumnField
 
 -- | `indexName` @indexColumns@ generates the default name for an index
 -- comprised of @indexColumns@. For example, assuming that @indexColumns@

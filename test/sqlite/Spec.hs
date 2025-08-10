@@ -53,7 +53,7 @@ tests backend = testGroup "Database.Persist.Index.Sqlite"
                 [Single 0] startCount
 
             -- create the index
-            runMigration $ createIndex @Sqlite False indexColumns
+            runMigration $ createIndex @Sqlite defaultIndexOptions indexColumns
 
             -- check that it exists
             endCount <- countIndicesNamed expectedIndexName
@@ -72,7 +72,7 @@ tests backend = testGroup "Database.Persist.Index.Sqlite"
                 [Single 0] startCount
 
             -- create the index
-            runMigration $ createIndex @Sqlite False indexColumns
+            runMigration $ createIndex @Sqlite defaultIndexOptions indexColumns
 
             -- check that it exists
             endCount <- countIndicesNamed expectedIndexName
