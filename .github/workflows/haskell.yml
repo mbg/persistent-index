@@ -1,0 +1,43 @@
+name: "Haskell"
+
+"on":
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: haskell-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: "Build & Test"
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - "ubuntu-latest"
+        resolver:
+          - "stack"
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v4
+
+      - name: "Start database services"
+        shell: bash
+        run: docker compose up -d
+
+      - name: "Build & Test"
+        uses: mbg/actions/stack/build@v0.2
+        with:
+          upload-docs: "true"
+
+      - name: "Stop database services"
+        if: always()
+        shell: bash
+        run: docker compose down
