@@ -12,7 +12,9 @@ module Database.Persist.Index.Postgresql (
     module Database.Persist.Index,
     Postgresql,
     PostgresqlIndexColumn,
-    psqlNullsOrder
+    psqlNullsOrder,
+    createIndex,
+    defaultIndexOptions
 ) where
 
 --------------------------------------------------------------------------------
@@ -22,7 +24,8 @@ import Data.Proxy
 import qualified Data.Text as T
 
 import Database.Persist
-import Database.Persist.Index
+import Database.Persist.Index hiding ( createIndex, defaultIndexOptions )
+import qualified Database.Persist.Index as Index
 import Database.Persist.Sql.Migration
 
 --------------------------------------------------------------------------------
@@ -71,5 +74,18 @@ instance SupportsIndices Postgresql where
                 Just order -> sortOrderSql order
 
             mkSql col = T.concat ["\"", indexColumnName col, "\" ", sortOrder col]
+
+-- | `createIndex` is `Index.createIndex` specialised to `Postgresql`.
+createIndex
+    :: forall rec . PersistEntity rec
+    => IndexOpts Postgresql
+    -> [IndexColumnEx Postgresql rec]
+    -> Migration
+createIndex = Index.createIndex
+
+-- | `defaultIndexOptions` is `Index.defaultIndexOptions`
+-- specialised to `Postgresql`.
+defaultIndexOptions :: IndexOpts Postgresql
+defaultIndexOptions = Index.defaultIndexOptions
 
 --------------------------------------------------------------------------------
