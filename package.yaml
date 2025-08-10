@@ -37,36 +37,18 @@ library:
     - -Wall
 
 tests:
-  persistent-index-sqlite-tests:
-    source-dirs: test/sqlite
+  persistent-index-tests:
+    source-dirs: test
     main: Spec.hs
     dependencies:
-      - monad-logger
-      - mtl
-      - persistent-index
-      - persistent-sqlite
-      - tasty
-      - tasty-hunit
-    default-extensions:
-      - DataKinds
-      - DerivingStrategies
-      - FlexibleInstances
-      - GADTs
-      - GeneralizedNewtypeDeriving
-      - MultiParamTypeClasses
-      - QuasiQuotes
-      - StandaloneDeriving
-      - TemplateHaskell
-      - UndecidableInstances
-
-  persistent-index-postgresql-tests:
-    source-dirs: test/postgresql
-    main: Spec.hs
-    dependencies:
+      - directory
       - monad-logger
       - mtl
       - persistent-index
       - persistent-postgresql
+      - persistent-sqlite
+      - postgresql-simple
+      - resource-pool
       - tasty
       - tasty-hunit
     default-extensions:

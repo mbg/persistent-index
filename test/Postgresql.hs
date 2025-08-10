@@ -8,19 +8,24 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 -- | Tests for the "Database.Persist.Index.Postgresql" module.
-module Main ( main ) where
+module Postgresql ( postgresSpec ) where
 
 --------------------------------------------------------------------------------
 
+import Control.Concurrent (getNumCapabilities)
 import Control.Monad.IO.Class (MonadIO(..))
-import Control.Monad.Logger (runStderrLoggingT)
+import Control.Monad.Logger (runStderrLoggingT, defaultOutput)
 import Control.Monad.Reader (ReaderT)
 
+import Data.Pool (Pool, destroyAllResources)
 import Data.Text (Text)
 
+import Database.PostgreSQL.Simple
 import Database.Persist.Index.Postgresql
 import Database.Persist.Postgresql
 import Database.Persist.TH
+
+import System.IO
 
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -40,10 +45,10 @@ countIndicesNamed name =
     rawSql "SELECT count(*) FROM pg_indexes WHERE indexname=?;"
         [PersistText name]
 
-tests :: SqlBackend -> TestTree
-tests backend = testGroup "Database.Persist.Index.Postgresql"
+tests :: IO (Pool SqlBackend) -> TestTree
+tests getPool = testGroup "Database.Persist.Index.Postgresql"
     [ testCase "Can create single-column index" $
-        flip runSqlConn backend $ do
+        getPool >>= \pool -> flip runSqlPool pool $ do
             let indexColumns = [indexColumn Nothing ExampleName]
             let expectedIndexName = indexName indexColumns
 
@@ -59,7 +64,7 @@ tests backend = testGroup "Database.Persist.Index.Postgresql"
             endCount <- countIndicesNamed expectedIndexName
             liftIO $ assertEqual "Index wasn't created" [Single 1] endCount
     , testCase "Can create multi-column index" $
-        flip runSqlConn backend $ do
+        getPool >>= \pool -> flip runSqlPool pool $ do
             let indexColumns =
                     [ indexColumn Nothing ExampleName
                     , indexColumn Nothing ExampleAge
@@ -78,7 +83,7 @@ tests backend = testGroup "Database.Persist.Index.Postgresql"
             endCount <- countIndicesNamed expectedIndexName
             liftIO $ assertEqual "Index wasn't created" [Single 1] endCount
     , testCase "Can create a unique index" $
-        flip runSqlConn backend $ do
+        getPool >>= \pool -> flip runSqlPool pool $ do
             let indexColumns =
                     [ indexColumn (Just ASC) ExampleName
                     , indexColumn (Just DESC) ExampleAge
@@ -102,7 +107,7 @@ tests backend = testGroup "Database.Persist.Index.Postgresql"
             endCount <- countIndicesNamed expectedIndexName
             liftIO $ assertEqual "Index wasn't created" [Single 1] endCount
     , testCase "Can create index with NULL sort order" $
-        flip runSqlConn backend $ do
+        getPool >>= \pool -> flip runSqlPool pool $ do
             let columnOpts = (defaultIndexColumnExtras @Postgresql){ psqlNullsOrder = Just NullsFirst }
             let columnA = (indexColumn @Postgresql (Just ASC) ExampleName ){ idxColumnExtra = columnOpts }
             let indexColumns =
@@ -132,13 +137,14 @@ tests backend = testGroup "Database.Persist.Index.Postgresql"
 connStr :: ConnectionString
 connStr = "host=localhost port=5432 user=postgres dbname=postgres"
 
--- | `main` is the main entry point for this test suite.
-main :: IO ()
-main = runStderrLoggingT $ withPostgresqlConn connStr $ \backend -> do
-    -- create the test table
-    flip runSqlConn backend $ runMigrationQuiet (migrateModels entities)
+initPool :: IO (Pool SqlBackend)
+initPool = do
+    threads <- getNumCapabilities
+    pool <- runStderrLoggingT $ createPostgresqlPool connStr threads
+    flip runSqlPool pool $ runMigrationQuiet (migrateModels entities)
+    pure pool
 
-    -- run the tests
-    liftIO $ defaultMain (tests backend)
+postgresSpec :: TestTree
+postgresSpec = withResource initPool destroyAllResources tests
 
 --------------------------------------------------------------------------------

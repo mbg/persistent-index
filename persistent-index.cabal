@@ -50,13 +50,15 @@ library
     , text
   default-language: Haskell2010
 
-test-suite persistent-index-postgresql-tests
+test-suite persistent-index-tests
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Postgresql
+      Sqlite
       Paths_persistent_index
   hs-source-dirs:
-      test/postgresql
+      test
   default-extensions:
       FlexibleInstances
       InstanceSigs
@@ -77,48 +79,15 @@ test-suite persistent-index-postgresql-tests
       UndecidableInstances
   build-depends:
       base >=4.8 && <5
+    , directory
     , monad-logger
     , mtl
     , persistent
     , persistent-index
     , persistent-postgresql
-    , tasty
-    , tasty-hunit
-    , text
-  default-language: Haskell2010
-
-test-suite persistent-index-sqlite-tests
-  type: exitcode-stdio-1.0
-  main-is: Spec.hs
-  other-modules:
-      Paths_persistent_index
-  hs-source-dirs:
-      test/sqlite
-  default-extensions:
-      FlexibleInstances
-      InstanceSigs
-      OverloadedStrings
-      RecordWildCards
-      TypeApplications
-      TypeFamilies
-      TypeOperators
-      DataKinds
-      DerivingStrategies
-      FlexibleInstances
-      GADTs
-      GeneralizedNewtypeDeriving
-      MultiParamTypeClasses
-      QuasiQuotes
-      StandaloneDeriving
-      TemplateHaskell
-      UndecidableInstances
-  build-depends:
-      base >=4.8 && <5
-    , monad-logger
-    , mtl
-    , persistent
-    , persistent-index
     , persistent-sqlite
+    , postgresql-simple
+    , resource-pool
     , tasty
     , tasty-hunit
     , text

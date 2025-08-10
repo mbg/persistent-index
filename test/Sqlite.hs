@@ -8,19 +8,25 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 -- | Tests for the "Database.Persist.Index.Sqlite" module.
-module Main ( main ) where
+module Sqlite ( sqliteSpec ) where
 
 --------------------------------------------------------------------------------
 
+import Control.Concurrent (getNumCapabilities)
 import Control.Monad.IO.Class (MonadIO(..))
-import Control.Monad.Logger (runStderrLoggingT)
+import Control.Monad.Logger (runStderrLoggingT, defaultOutput)
 import Control.Monad.Reader (ReaderT)
 
 import Data.Text (Text)
+import Data.Pool (Pool, destroyAllResources)
 
+import Database.Sqlite
 import Database.Persist.Index.Sqlite
 import Database.Persist.Sqlite
 import Database.Persist.TH
+
+import System.Directory (removeFile)
+import System.IO (stderr)
 
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -40,10 +46,10 @@ countIndicesNamed name =
     rawSql "SELECT count(*) FROM sqlite_master WHERE type='index' and name=?;"
         [PersistText name]
 
-tests :: SqlBackend -> TestTree
-tests backend = testGroup "Database.Persist.Index.Sqlite"
+tests :: IO (Pool SqlBackend) -> TestTree
+tests getPool = testGroup "Database.Persist.Index.Sqlite"
     [ testCase "Can create single-column index" $
-        flip runSqlConn backend $ do
+        getPool >>= \pool -> flip runSqlPool pool $ do
             let indexColumns = [indexColumn Nothing ExampleName]
             let expectedIndexName = indexName indexColumns
 
@@ -59,7 +65,7 @@ tests backend = testGroup "Database.Persist.Index.Sqlite"
             endCount <- countIndicesNamed expectedIndexName
             liftIO $ assertEqual "Index wasn't created" [Single 1] endCount
     , testCase "Can create multi-column index" $
-        flip runSqlConn backend $ do
+        getPool >>= \pool -> flip runSqlPool pool $ do
             let indexColumns =
                     [ indexColumn Nothing ExampleName
                     , indexColumn Nothing ExampleAge
@@ -78,7 +84,7 @@ tests backend = testGroup "Database.Persist.Index.Sqlite"
             endCount <- countIndicesNamed expectedIndexName
             liftIO $ assertEqual "Index wasn't created" [Single 1] endCount
     , testCase "Can create a unique index" $
-        flip runSqlConn backend $ do
+        getPool >>= \pool -> flip runSqlPool pool $ do
             let indexColumns =
                     [ indexColumn (Just ASC) ExampleName
                     , indexColumn (Just DESC) ExampleAge
@@ -103,13 +109,19 @@ tests backend = testGroup "Database.Persist.Index.Sqlite"
             liftIO $ assertEqual "Index wasn't created" [Single 1] endCount
     ]
 
--- | `main` is the main entry point for this test suite.
-main :: IO ()
-main = runStderrLoggingT $ withSqliteConn ":memory:" $ \backend -> do
-    -- create the test table
-    flip runSqlConn backend $ runMigrationQuiet (migrateModels entities)
+initPool :: IO (Pool SqlBackend)
+initPool = do
+    threads <- getNumCapabilities
+    pool <- runStderrLoggingT $ createSqlitePool "test.db" threads
+    flip runSqlPool pool $ runMigrationQuiet (migrateModels entities)
+    pure pool
 
-    -- run the tests
-    liftIO $ defaultMain (tests backend)
+closePool :: Pool SqlBackend -> IO ()
+closePool pool = do
+    destroyAllResources pool
+    removeFile "test.db"
+
+sqliteSpec :: TestTree
+sqliteSpec = withResource initPool closePool tests
 
 --------------------------------------------------------------------------------
