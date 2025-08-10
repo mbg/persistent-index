@@ -19,6 +19,7 @@ module Database.Persist.Index.Postgresql (
 
 --------------------------------------------------------------------------------
 
+import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 
 import Database.Persist
@@ -61,11 +62,14 @@ instance SupportsIndices Postgresql where
         ]
         where
             fieldSql = map mkSql columns
-            sortOrder IdxColumn{..} = case idxColumnSortOrder of
-                Nothing -> T.empty
-                Just order -> toSql order
+            sortOrder IdxColumn{..} =
+                fromMaybe T.empty $
+                (" " <>) . toSql <$> idxColumnSortOrder
+            nullsOrder IdxColumn{..} =
+                fromMaybe T.empty $
+                (" " <>) . toSql <$> psqlNullsOrder idxColumnExtra
 
-            mkSql col = T.concat ["\"", indexColumnName col, "\" ", sortOrder col]
+            mkSql col = T.concat ["\"", indexColumnName col, "\"", sortOrder col, nullsOrder col]
 
 -- | `createIndex` is `Index.createIndex` specialised to `Postgresql`.
 createIndex

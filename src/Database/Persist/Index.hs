@@ -153,9 +153,9 @@ class SupportsIndices dbms where
         ]
         where
             fieldSql = map mkSql columns
-            sortOrder IdxColumn{..} = case idxColumnSortOrder of
-                Nothing -> T.empty
-                Just order -> toSql order
+            sortOrder IdxColumn{..} =
+                fromMaybe T.empty $
+                toSql <$> idxColumnSortOrder
 
             mkSql col = T.concat ["\"", indexColumnName col, "\" ", sortOrder col]
 

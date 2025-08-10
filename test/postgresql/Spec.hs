@@ -101,6 +101,32 @@ tests backend = testGroup "Database.Persist.Index.Postgresql"
             -- check that it exists
             endCount <- countIndicesNamed expectedIndexName
             liftIO $ assertEqual "Index wasn't created" [Single 1] endCount
+    , testCase "Can create index with NULL sort order" $
+        flip runSqlConn backend $ do
+            let columnOpts = (defaultIndexColumnExtras @Postgresql){ psqlNullsOrder = Just NullsFirst }
+            let columnA = (indexColumn @Postgresql (Just ASC) ExampleName ){ idxColumnExtra = columnOpts }
+            let indexColumns =
+                    [ columnA
+                    , indexColumn (Just DESC) ExampleAge
+                    ]
+            let expectedIndexName = indexName indexColumns <> "_nulls"
+
+            -- check that the index doesn't already exist
+            startCount <- countIndicesNamed expectedIndexName
+            liftIO $ assertEqual "Index already in database"
+                [Single 0] startCount
+
+            -- create the index
+            let opts =
+                    defaultIndexOptions{
+                        idxName = Just expectedIndexName,
+                        idxUnique = True
+                    }
+            runMigration $ createIndex opts indexColumns
+
+            -- check that it exists
+            endCount <- countIndicesNamed expectedIndexName
+            liftIO $ assertEqual "Index wasn't created" [Single 1] endCount
     ]
 
 connStr :: ConnectionString
