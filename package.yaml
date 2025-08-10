@@ -1,0 +1,37 @@
+name: persistent-index
+version: 0.1.0.0
+github: "mbg/persistent-index"
+license: MIT
+license-file: LICENSE
+author: "Michael B. Gale"
+maintainer: "github@michael-gale.co.uk"
+copyright: "Copyright (c) Michael B. Gale"
+
+category: Database
+synopsis: "Column index support for persistent"
+description: "Add-on library for persistent for working with column indices"
+
+extra-source-files:
+  - README.md
+
+extra-doc-files:
+  - CHANGELOG.md
+
+default-extensions:
+  - FlexibleInstances
+  - InstanceSigs
+  - OverloadedStrings
+  - RecordWildCards
+  - TypeApplications
+  - TypeFamilies
+  - TypeOperators
+
+dependencies:
+  - base >= 4.8 && < 5
+  - persistent
+  - text
+
+library:
+  source-dirs: src
+  ghc-options:
+    - -Wall

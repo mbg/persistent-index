@@ -1,0 +1,51 @@
+cabal-version: 1.18
+
+-- This file has been generated from package.yaml by hpack version 0.38.1.
+--
+-- see: https://github.com/sol/hpack
+
+name:           persistent-index
+version:        0.1.0.0
+synopsis:       Column index support for persistent
+description:    Add-on library for persistent for working with column indices
+category:       Database
+homepage:       https://github.com/mbg/persistent-index#readme
+bug-reports:    https://github.com/mbg/persistent-index/issues
+author:         Michael B. Gale
+maintainer:     github@michael-gale.co.uk
+copyright:      Copyright (c) Michael B. Gale
+license:        MIT
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+extra-doc-files:
+    CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/mbg/persistent-index
+
+library
+  exposed-modules:
+      Database.Persist.Index
+      Database.Persist.Index.Postgresql
+      Database.Persist.Index.Sqlite
+  other-modules:
+      Paths_persistent_index
+  hs-source-dirs:
+      src
+  default-extensions:
+      FlexibleInstances
+      InstanceSigs
+      OverloadedStrings
+      RecordWildCards
+      TypeApplications
+      TypeFamilies
+      TypeOperators
+  ghc-options: -Wall
+  build-depends:
+      base >=4.8 && <5
+    , persistent
+    , text
+  default-language: Haskell2010
