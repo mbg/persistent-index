@@ -33,6 +33,6 @@ jobs:
         uses: actions/checkout@v4
 
       - name: "Build with nightly resolver"
-        uses: mbg/actions/stack/nightly@v0.2
+        uses: mbg/actions/stack/nightly@v0.3
         with:
           create-issue: "true"
