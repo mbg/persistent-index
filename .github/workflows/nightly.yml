@@ -30,7 +30,7 @@ jobs:
 
     steps:
       - name: "Checkout repository"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: "Build with nightly resolver"
         uses: mbg/actions/stack/nightly@v0.2
