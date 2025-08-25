@@ -33,7 +33,7 @@ jobs:
         run: docker compose up -d
 
       - name: "Build & Test"
-        uses: mbg/actions/stack/build@v0.2
+        uses: mbg/actions/stack/build@v0.3
         with:
           upload-docs: "true"
 
