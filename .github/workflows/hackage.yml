@@ -29,7 +29,7 @@ jobs:
         run: echo $EVENT_DATA | jq
 
       - name: "Checkout repository"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: "Determine version"
         id: determine-version
